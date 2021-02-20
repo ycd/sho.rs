@@ -6,16 +6,17 @@ extern crate rocket;
 use rocket::State;
 use rocket_contrib::json::Json;
 use serde::{Deserialize, Serialize};
-use shortener::shortener::Shortener;
-use shortener::url::Url;
+
+use shortener::{shortener::Shortener, url::Url};
 mod shortener;
+
 mod storage;
 use std::sync::Mutex;
 
 #[derive(Serialize)]
 struct Response {
     status_code: i16,
-    data: shortener::url::Url,
+    data: Url,
     error: String,
 }
 #[derive(Deserialize, Debug)]
