@@ -1,9 +1,10 @@
 use harsh::Harsh;
 use mongodb::{
     bson::{doc, Document},
-    options::FindOptions,
+    options::{FindOneOptions, FindOptions},
 };
 
+use log::{error, info, trace, warn};
 use storage::storage::Storage;
 
 use crate::storage;
@@ -21,15 +22,37 @@ impl Shortener {
         let harsh = Harsh::default();
         let storage = Storage::new(db_name);
 
-        // The default collection is shortener.
-        let collection = storage.db.collection("shortener");
-        let find_options = FindOptions::builder().sort(doc! {"_id": -1}).build();
-        let cursor = collection.find(None, find_options);
-        for result in cursor {
-            println!("{:?}", result);
-        }
+        // To create unique id every time we need an atomic
+        // counter to get or restore id from there
+        //
+        // It follows these steps
+        // 1- check mongodb for the key
+        //    1.2- if None found
+        //        1.3 - Create new object and return 0
+        // 2- return the current count.
+        let collection = storage.db.collection("counter");
+        let id: u64 = match collection.find_one(doc! {"name": "counter"}, None).unwrap() {
+            Some(document) => document.get_i64("count").unwrap() as u64,
+            None => match collection.insert_one(
+                doc! {
+                    "name": "counter",
+                    "count": 0 as u64,
+                },
+                None,
+            ) {
+                Ok(res) => {
+                    info!("successfully created count {:#?}", res);
+                    0
+                }
+                Err(e) => {
+                    error!("error occured, creating counter {:#?}", e);
+                    panic!("counter creation failed, exiting");
+                }
+            },
+        };
+
         Shortener {
-            id: 0,
+            id: id,
             generator: harsh,
             storage: storage,
         }
@@ -37,17 +60,34 @@ impl Shortener {
 
     pub fn next_id(&mut self) -> String {
         let hashed = self.generator.encode(&[self.id]);
-        self.id += 1;
+        let _ = match self.increment_counter() {
+            Ok(_) => self.id += 1,
+            Err(e) => error!("error occured, calling next_id : {}", e),
+        };
+
         hashed
+    }
+
+    fn increment_counter(&self) -> Result<(), mongodb::error::Error> {
+        let collection = self.storage.db.collection("counter");
+
+        match collection.update_one(doc! {"name": "counter"}, doc! {"$inc": {"count": 1}}, None) {
+            Ok(result) => info!("successfully incremented counter: {:#?}", result),
+            Err(e) => error!("error occured, incrementing atomic counter: {}", e),
+        };
+
+        Ok(())
     }
 
     pub fn shorten(&mut self, url: &str) -> Result<Url, mongodb::error::Error> {
         let collection = self.storage.db.collection("shortener");
+
+        // Create new URL record from the input URL.
         let url_record = Url::new_record(self.next_id(), String::from(url));
 
         match collection.insert_one(url_record.to_document(), None) {
-            Ok(result) => println!("result: {:#?}", result),
-            Err(e) => println!("Some error occured: {}", e),
+            Ok(result) => info!("successfully shortened url: {:#?}", result),
+            Err(e) => error!("error occured, inserting shortened url: {}", e),
         }
 
         Ok(url_record)
