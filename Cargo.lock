@@ -1852,6 +1852,7 @@ dependencies = [
  "chrono",
  "dotenv",
  "harsh",
+ "log 0.4.14",
  "mongodb",
  "rocket",
  "rocket_contrib",
