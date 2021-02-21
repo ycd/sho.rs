@@ -2,7 +2,7 @@ use mongodb::bson::{doc, to_bson, Document};
 
 use serde::Serialize;
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct Url {
     pub archived: bool,
     pub created_at: String,

@@ -1,10 +1,7 @@
 use harsh::Harsh;
-use mongodb::{
-    bson::{doc, Document},
-    options::{FindOneOptions, FindOptions},
-};
+use mongodb::bson::doc;
 
-use log::{error, info, trace, warn};
+use log::{error, info};
 use storage::storage::Storage;
 
 use crate::storage;
@@ -66,6 +63,21 @@ impl Shortener {
         };
 
         hashed
+    }
+
+    pub fn get_original_url(&self, id: String) -> Option<String> {
+        let collection = self.storage.db.collection("shortener");
+
+        let original_url: Option<String> =
+            match collection.find_one(doc! {"id": &id}, None).unwrap() {
+                Some(document) => Some(document.get_str("long_url").unwrap().to_string()),
+                None => {
+                    info!("no document found for id={}", &id);
+                    None
+                }
+            };
+
+        original_url
     }
 
     fn increment_counter(&self) -> Result<(), mongodb::error::Error> {
