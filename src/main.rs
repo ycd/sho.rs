@@ -7,11 +7,13 @@ use response::Redirect;
 use rocket::{response, State};
 use rocket_contrib::json::Json;
 use serde::{Deserialize, Serialize};
+use utils::types::RequestHeaders;
 
 use shortener::{shortener::Shortener, url::Url};
 mod shortener;
-
 mod storage;
+mod utils;
+
 use std::sync::Mutex;
 
 #[derive(Debug, Serialize)]
@@ -57,7 +59,11 @@ fn index<'a>(
 }
 
 #[get("/<id>")]
-fn redirect<'a>(id: String, shortener: State<'a, SharedShortener>) -> ResponseOrRedirect {
+fn redirect<'a>(
+    id: String,
+    shortener: State<'a, SharedShortener>,
+    headers: RequestHeaders,
+) -> ResponseOrRedirect {
     let shared_shortener: &SharedShortener = shortener.inner().clone();
 
     let response: ResponseOrRedirect =
