@@ -3,11 +3,12 @@
 #[macro_use]
 extern crate rocket;
 
+use log::info;
 use response::Redirect;
 use rocket::{response, State};
 use rocket_contrib::json::Json;
 use serde::{Deserialize, Serialize};
-use utils::types::RequestHeaders;
+use utils::types::{RequestHeaders, RequestSocketAddr};
 
 use shortener::{shortener::Shortener, url::Url};
 mod shortener;
@@ -63,9 +64,11 @@ fn redirect<'a>(
     id: String,
     shortener: State<'a, SharedShortener>,
     headers: RequestHeaders,
+    client_ip: RequestSocketAddr,
 ) -> ResponseOrRedirect {
-    let shared_shortener: &SharedShortener = shortener.inner().clone();
+    info!("Got new request from {:?} to id: {}", client_ip, id);
 
+    let shared_shortener: &SharedShortener = shortener.inner().clone();
     let response: ResponseOrRedirect =
         match shared_shortener.url.lock().unwrap().get_original_url(id) {
             Some(url) => ResponseOrRedirect::Redirect(Redirect::to(url)),

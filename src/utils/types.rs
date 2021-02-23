@@ -24,3 +24,20 @@ impl<'a, 'r> FromRequest<'a, 'r> for RequestHeaders {
         rocket::Outcome::Success(Self { headers: headers })
     }
 }
+
+#[derive(Debug)]
+pub struct RequestSocketAddr {
+    pub socket_addr: String,
+}
+
+impl<'a, 'r> FromRequest<'a, 'r> for RequestSocketAddr {
+    type Error = Infallible;
+
+    fn from_request(request: &'a Request<'r>) -> Outcome<Self, Self::Error> {
+        let socket_addr: String = request.remote().unwrap().to_string();
+
+        rocket::Outcome::Success(Self {
+            socket_addr: socket_addr,
+        })
+    }
+}
