@@ -8,14 +8,14 @@ use response::Redirect;
 use rocket::{response, State};
 use rocket_contrib::json::Json;
 use serde::{Deserialize, Serialize};
-use utils::types::{RequestHeaders, RequestSocketAddr};
+use utils::types::RequestHeaders;
 
 use shortener::{shortener::Shortener, url::Url};
 mod shortener;
 mod storage;
 mod utils;
 
-use std::sync::Mutex;
+use std::{net::SocketAddr, sync::Mutex};
 
 #[derive(Debug, Serialize)]
 struct ShortenerResponse {
@@ -23,6 +23,7 @@ struct ShortenerResponse {
     data: Option<Url>,
     error: String,
 }
+
 #[derive(Deserialize, Debug)]
 struct Shorten {
     url: String,
@@ -67,7 +68,7 @@ fn redirect<'a>(
     id: String,
     shortener: State<'a, SharedShortener>,
     headers: RequestHeaders,
-    client_ip: RequestSocketAddr,
+    client_ip: SocketAddr,
 ) -> ResponseOrRedirect {
     info!("Got new request from {:?} to id: {}", client_ip, id);
 
