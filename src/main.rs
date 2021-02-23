@@ -35,6 +35,9 @@ struct SharedShortener {
 #[derive(Debug, Responder)]
 enum ResponseOrRedirect {
     Response(Json<ShortenerResponse>),
+
+    // Use 301 Moved Permanently as status code
+    // to don't hurt website's SEO.
     #[response(status = 301)]
     Redirect(Redirect),
 }
@@ -53,7 +56,7 @@ fn index<'a>(
         .unwrap();
 
     Json(ShortenerResponse {
-        status_code: 200,
+        status_code: 201,
         data: Some(url),
         error: String::new(),
     })
