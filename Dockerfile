@@ -8,4 +8,4 @@ RUN cargo build
 # COPY TO BIN
 RUN cp target/debug/shors /usr/bin/shors
 
-ENTRYPOINT [ "shors" ]
+CMD [ "shors" ]
