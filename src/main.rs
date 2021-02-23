@@ -10,7 +10,7 @@ use rocket_contrib::json::Json;
 use serde::{Deserialize, Serialize};
 use utils::types::RequestHeaders;
 
-use shortener::{shortener::Shortener, url::Url};
+use shortener::{shortener::Analytics, shortener::Shortener, url::Url};
 mod shortener;
 mod storage;
 mod utils;
@@ -72,16 +72,35 @@ fn redirect<'a>(
 ) -> ResponseOrRedirect {
     info!("Got new request from {:?} to id: {}", client_ip, id);
 
-    let shared_shortener: &SharedShortener = shortener.inner().clone();
-    let response: ResponseOrRedirect =
-        match shared_shortener.url.lock().unwrap().get_original_url(id) {
-            Some(url) => ResponseOrRedirect::Redirect(Redirect::to(url)),
-            None => ResponseOrRedirect::Response(Json(ShortenerResponse {
-                status_code: 404,
-                data: None,
-                error: String::from("No URL found."),
-            })),
-        };
+    let shared_shortener: &SharedShortener = shortener.inner();
+    let response: ResponseOrRedirect = match shared_shortener
+        .url
+        .lock()
+        .unwrap()
+        .get_original_url(id.clone())
+    {
+        Some(url) => ResponseOrRedirect::Redirect(Redirect::to(url)),
+        None => ResponseOrRedirect::Response(Json(ShortenerResponse {
+            status_code: 404,
+            data: None,
+            error: String::from("No URL found."),
+        })),
+    };
+
+    match response {
+        ResponseOrRedirect::Response(_) => {}
+        ResponseOrRedirect::Redirect(_) => {
+            shared_shortener
+                .url
+                .try_lock()
+                .unwrap()
+                .process_analytics(Analytics::new(
+                    id.clone(),
+                    headers.headers,
+                    client_ip.to_string(),
+                ));
+        }
+    };
 
     response
 }

@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use harsh::Harsh;
 use mongodb::bson::doc;
 
@@ -103,5 +105,29 @@ impl Shortener {
         }
 
         Ok(url_record)
+    }
+}
+
+#[derive(Debug)]
+pub struct Analytics {
+    pub id: String,
+    pub headers: HashMap<String, String>,
+    pub ip: String,
+}
+
+impl Analytics {
+    pub fn new(id: String, headers: HashMap<String, String>, ip: String) -> Analytics {
+        Analytics {
+            id: id,
+            headers: headers,
+            ip: ip,
+        }
+    }
+}
+
+impl Shortener {
+    // TODO(ycd): Analyze request and update mongo
+    pub fn process_analytics(&self, analytics: Analytics) {
+        println!("{:#?}", analytics);
     }
 }
