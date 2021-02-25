@@ -91,7 +91,7 @@ fn redirect<'a>(
     match response {
         ResponseOrRedirect::Response(_) => {}
         ResponseOrRedirect::Redirect(_) => {
-            crossbeam::thread::scope(|scope| {
+            match crossbeam::thread::scope(|scope| {
                 scope.spawn(move |_| {
                     shared_shortener
                         .url
@@ -103,7 +103,10 @@ fn redirect<'a>(
                             client_ip.to_string(),
                         ));
                 });
-            });
+            }) {
+                Ok(_) => info!("successfully proccessed analytics"),
+                Err(e) => log::error!("error occured: {:#?}", e),
+            }
         }
     };
 
