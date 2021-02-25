@@ -8,6 +8,7 @@ version = "0.1.0"
 
 [dependencies]
 chrono = "0.4"
+crossbeam = "0.8"
 dotenv = "0.15.0"
 harsh = "0.2.1"
 log = "0.4"
