@@ -70,6 +70,7 @@ fn redirect<'a>(
     headers: RequestHeaders,
     client_ip: SocketAddr,
 ) -> ResponseOrRedirect {
+    // FIXME: this is for debugging purposes, should be deleted later.
     info!("Got new request from {:?} to id: {}", client_ip, id);
 
     let shared_shortener: &SharedShortener = shortener.inner();
