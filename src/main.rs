@@ -91,15 +91,19 @@ fn redirect<'a>(
     match response {
         ResponseOrRedirect::Response(_) => {}
         ResponseOrRedirect::Redirect(_) => {
-            shared_shortener
-                .url
-                .try_lock()
-                .unwrap()
-                .process_analytics(Analytics::new(
-                    id.clone(),
-                    headers.headers,
-                    client_ip.to_string(),
-                ));
+            crossbeam::thread::scope(|scope| {
+                scope.spawn(move |_| {
+                    shared_shortener
+                        .url
+                        .try_lock()
+                        .unwrap()
+                        .process_analytics(Analytics::new(
+                            id.clone(),
+                            headers.headers,
+                            client_ip.to_string(),
+                        ));
+                });
+            });
         }
     };
 
