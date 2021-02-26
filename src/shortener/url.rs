@@ -5,7 +5,7 @@ use serde::Serialize;
 #[derive(Debug, Serialize)]
 pub struct Url {
     pub archived: bool,
-    pub created_at: String,
+    pub created_at: chrono::DateTime<chrono::Utc>,
     pub id: String,
     pub link: String,
     pub long_url: String,
@@ -14,7 +14,7 @@ pub struct Url {
 impl Url {
     pub fn new_record(id: String, long_url: String) -> Url {
         Url {
-            created_at: chrono::Utc::now().to_rfc2822(),
+            created_at: chrono::Utc::now(),
             id: String::from(&id),
             archived: false,
             long_url: long_url,

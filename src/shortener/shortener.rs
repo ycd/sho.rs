@@ -114,6 +114,7 @@ pub struct Analytics {
     pub id: String,
     pub headers: HashMap<String, String>,
     pub ip: String,
+    time: chrono::DateTime<chrono::Utc>,
 }
 
 impl Analytics {
@@ -122,6 +123,7 @@ impl Analytics {
             id: id,
             headers: headers,
             ip: ip,
+            time: chrono::Utc::now(),
         }
     }
 
@@ -131,9 +133,7 @@ impl Analytics {
 }
 
 impl Shortener {
-    // TODO(ycd): Analyze request and update mongo
     pub fn process_analytics(&self, analytics: Analytics) {
-        // println!("{:#?}", &analytics);
         let analytics_db = self.storage.db.collection("analytics");
 
         match analytics_db.insert_one(analytics.to_document(), None) {
@@ -141,5 +141,9 @@ impl Shortener {
             Err(e) => error!("error occured, analytics process {:#?}", e),
         };
         println!("{:#?}", analytics.to_document());
+    }
+
+    pub fn get_analytics(&self, id: String) {
+        let analytics_db = self.storage.db.collection("analytics");
     }
 }
