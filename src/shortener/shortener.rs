@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use harsh::Harsh;
-use mongodb::{bson::doc, options::UpdateOptions};
+use mongodb::bson::doc;
 
 use log::{error, info};
 use storage::storage::Storage;
@@ -142,8 +142,24 @@ impl Shortener {
         };
         println!("{:#?}", analytics.to_document());
     }
+}
 
+#[derive(Debug, Serialize)]
+pub struct AnalyticResults {
+    pub count: u64,
+    pub client_os: HashMap<String, String>,
+    pub client_device: HashMap<String, String>,
+}
+
+impl Shortener {
     pub fn get_analytics(&self, id: String) {
         let analytics_db = self.storage.db.collection("analytics");
+
+        match analytics_db.find(doc! {"id": &id}, None) {
+            Ok(result) => {
+                info!("result from analytics {:#?}", result);
+            }
+            Err(e) => error!("error occured while getting analytics {:#?}", e),
+        }
     }
 }
