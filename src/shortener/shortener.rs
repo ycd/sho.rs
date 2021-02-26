@@ -189,13 +189,13 @@ impl Shortener {
                                     let _ = match devices.get_mut(&ua.category.to_string()) {
                                         Some(v) => *v += 1,
                                         None => {
-                                            devices.insert(ua.category.to_string(), 0).unwrap_none()
+                                            devices.insert(ua.category.to_string(), 1).unwrap_none()
                                         }
                                     };
                                     let _ = match client_os.get_mut(&ua.os.to_string()) {
                                         Some(v) => *v += 1,
                                         None => {
-                                            client_os.insert(ua.os.to_string(), 0).unwrap_none()
+                                            client_os.insert(ua.os.to_string(), 1).unwrap_none()
                                         }
                                     };
                                 }
