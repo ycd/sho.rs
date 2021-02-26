@@ -1,6 +1,6 @@
 # TODO
 
-* [ ] Add analytics
+* [x] Add analytics
 * [ ] Make analytics optional
 * [ ] Increase test coverage
 * [ ] Add analytics links
