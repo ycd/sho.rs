@@ -1,14 +1,15 @@
 use std::collections::HashMap;
 
 use harsh::Harsh;
-use mongodb::bson::doc;
+use mongodb::{bson::doc, options::UpdateOptions};
 
 use log::{error, info};
 use storage::storage::Storage;
 
-use crate::storage;
-
 use super::url::Url;
+use crate::storage;
+use mongodb::bson::{to_bson, Document};
+use serde::Serialize;
 
 pub struct Shortener {
     pub id: u64,
@@ -108,7 +109,7 @@ impl Shortener {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct Analytics {
     pub id: String,
     pub headers: HashMap<String, String>,
@@ -123,11 +124,28 @@ impl Analytics {
             ip: ip,
         }
     }
+
+    pub fn to_document(&self) -> Document {
+        to_bson(&self).unwrap().as_document().unwrap().clone()
+    }
 }
 
 impl Shortener {
     // TODO(ycd): Analyze request and update mongo
     pub fn process_analytics(&self, analytics: Analytics) {
-        println!("{:#?}", analytics);
+        // println!("{:#?}", &analytics);
+        let analytics_db = self.storage.db.collection("analytics");
+        let options = mongodb::options::UpdateOptions::builder()
+            .upsert(true)
+            .build();
+        match analytics_db.update_one(
+            doc! {"id": &analytics.id},
+            doc! { "$inc": {"redirect_count": 1}, "$set": analytics.to_document()},
+            Some(options),
+        ) {
+            Ok(res) => info!("result from analytics process {:#?}", res),
+            Err(e) => error!("error occured, analytics process {:#?}", e),
+        };
+        println!("{:#?}", analytics.to_document());
     }
 }
