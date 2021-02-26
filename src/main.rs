@@ -1,7 +1,9 @@
 #![feature(proc_macro_hygiene, decl_macro)]
+#![feature(option_unwrap_none)]
 
 #[macro_use]
 extern crate rocket;
+extern crate woothee;
 
 use log::info;
 use response::Redirect;
@@ -10,7 +12,11 @@ use rocket_contrib::json::Json;
 use serde::{Deserialize, Serialize};
 use utils::types::RequestHeaders;
 
-use shortener::{shortener::Analytics, shortener::Shortener, url::Url};
+use shortener::{
+    shortener::Analytics,
+    shortener::{AnalyticResults, Shortener},
+    url::Url,
+};
 mod shortener;
 mod storage;
 mod utils;
@@ -61,6 +67,17 @@ fn index<'a>(
         data: Some(url),
         error: String::new(),
     })
+}
+
+#[get("/api/<id>")]
+fn get_analytics_of_id<'a>(
+    id: String,
+    shortener: State<'a, SharedShortener>,
+) -> Json<AnalyticResults> {
+    let shared_shortener: &SharedShortener = shortener.inner().clone();
+    let analytics = shared_shortener.url.lock().unwrap().get_analytics(id);
+
+    Json(analytics)
 }
 
 #[get("/<id>")]
@@ -116,7 +133,7 @@ fn redirect<'a>(
 fn main() {
     let shortener: Shortener = shortener::shortener::Shortener::new("shortener");
     rocket::ignite()
-        .mount("/", routes![index, redirect])
+        .mount("/", routes![index, redirect, get_analytics_of_id])
         .manage(SharedShortener {
             url: Mutex::new(shortener),
         })

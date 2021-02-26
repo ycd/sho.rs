@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use harsh::Harsh;
 use mongodb::bson::doc;
 
-use log::{error, info};
+use log::{error, info, warn};
 use storage::storage::Storage;
 
 use super::url::Url;
@@ -147,19 +147,70 @@ impl Shortener {
 #[derive(Debug, Serialize)]
 pub struct AnalyticResults {
     pub count: u64,
-    pub client_os: HashMap<String, String>,
-    pub client_device: HashMap<String, String>,
+    pub client_os: HashMap<String, u32>,
+    pub devices: HashMap<String, u32>,
+}
+
+impl AnalyticResults {
+    fn new() -> AnalyticResults {
+        AnalyticResults {
+            count: 0 as u64,
+            client_os: HashMap::new(),
+            devices: HashMap::new(),
+        }
+    }
 }
 
 impl Shortener {
-    pub fn get_analytics(&self, id: String) {
+    pub fn get_analytics(&self, id: String) -> AnalyticResults {
         let analytics_db = self.storage.db.collection("analytics");
 
+        let parser = woothee::parser::Parser::new();
+
+        let mut analytics_results: AnalyticResults = AnalyticResults::new();
         match analytics_db.find(doc! {"id": &id}, None) {
             Ok(result) => {
-                info!("result from analytics {:#?}", result);
+                let mut client_os: HashMap<String, u32> = HashMap::new();
+                let mut devices: HashMap<String, u32> = HashMap::new();
+                let mut count: u64 = 0;
+                for res in result {
+                    match res {
+                        Ok(document) => {
+                            let user_agent = parser.parse(
+                                document
+                                    .get_document("headers")
+                                    .unwrap()
+                                    .get_str("User-Agent")
+                                    .unwrap(),
+                            );
+                            count += 1;
+                            match user_agent {
+                                Some(ua) => {
+                                    let _ = match devices.get_mut(&ua.category.to_string()) {
+                                        Some(v) => *v += 1,
+                                        None => {
+                                            devices.insert(ua.category.to_string(), 0).unwrap_none()
+                                        }
+                                    };
+                                    let _ = match devices.get_mut(&ua.os.to_string()) {
+                                        Some(v) => *v += 1,
+                                        None => devices.insert(ua.os.to_string(), 0).unwrap_none(),
+                                    };
+                                }
+                                None => warn!("no user agent found"),
+                            }
+                        }
+                        Err(_) => {}
+                    }
+                }
+                analytics_results = AnalyticResults {
+                    devices: devices,
+                    count: count,
+                    client_os: client_os,
+                }
             }
             Err(e) => error!("error occured while getting analytics {:#?}", e),
         }
+        analytics_results
     }
 }
