@@ -135,14 +135,8 @@ impl Shortener {
     pub fn process_analytics(&self, analytics: Analytics) {
         // println!("{:#?}", &analytics);
         let analytics_db = self.storage.db.collection("analytics");
-        let options = mongodb::options::UpdateOptions::builder()
-            .upsert(true)
-            .build();
-        match analytics_db.update_one(
-            doc! {"id": &analytics.id},
-            doc! { "$inc": {"redirect_count": 1}, "$set": analytics.to_document()},
-            Some(options),
-        ) {
+
+        match analytics_db.insert_one(analytics.to_document(), None) {
             Ok(res) => info!("result from analytics process {:#?}", res),
             Err(e) => error!("error occured, analytics process {:#?}", e),
         };
