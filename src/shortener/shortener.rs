@@ -192,9 +192,11 @@ impl Shortener {
                                             devices.insert(ua.category.to_string(), 0).unwrap_none()
                                         }
                                     };
-                                    let _ = match devices.get_mut(&ua.os.to_string()) {
+                                    let _ = match client_os.get_mut(&ua.os.to_string()) {
                                         Some(v) => *v += 1,
-                                        None => devices.insert(ua.os.to_string(), 0).unwrap_none(),
+                                        None => {
+                                            client_os.insert(ua.os.to_string(), 0).unwrap_none()
+                                        }
                                     };
                                 }
                                 None => warn!("no user agent found"),
